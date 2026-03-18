@@ -2,6 +2,8 @@
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Login } from "./pages/Login";
 import { Home } from "./pages/Home";
+import { Register } from "./pages/Register";
+import { DashboardProfissional } from "./pages/DashboardProfissional"; // Importação nova
 
 export default function App() {
   return (
@@ -9,7 +11,9 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to="/login" replace />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
         <Route path="/home" element={<Home />} />
+        <Route path="/dashboard" element={<DashboardProfissional />} /> {/* Rota nova */}
       </Routes>
     </BrowserRouter>
   );

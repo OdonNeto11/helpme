@@ -1,16 +1,21 @@
 // src/pages/Home.jsx
-import { useState } from 'react';
-import { Star, MapPin, MessageCircle, CheckCircle, ShieldCheck, Quote, SlidersHorizontal, ChevronDown, ChevronUp } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Star, MapPin, MessageCircle, CheckCircle, ShieldCheck, Quote, SlidersHorizontal, ChevronDown, ChevronUp, LogOut } from 'lucide-react';
 import { Logo } from '../components/ui/Logo';
-import { professionals } from '../data/professionals';
 import { Heading, Text } from '../components/ui/Typography';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { Select } from '../components/ui/Select';
 import { Modal } from '../components/ui/Modal';
 import { cn } from '../lib/utils';
+import { supabase } from '../lib/supabase';
 
 export function Home() {
+  const navigate = useNavigate();
+  const [professionalsData, setProfessionalsData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const [categoria, setCategoria] = useState('');
   const [notaMinima, setNotaMinima] = useState(0);
   const [cidade, setCidade] = useState('');
@@ -20,12 +25,71 @@ export function Home() {
   const [modalAberto, setModalAberto] = useState(false);
   const [profSelecionado, setProfSelecionado] = useState(null);
 
-  const categoriasUnicas = [...new Set(professionals.map(p => p.profession))].sort();
-  const cidadesUnicas = [...new Set(professionals.map(p => p.city))].sort();
+  useEffect(() => {
+    async function fetchProfessionals() {
+      try {
+        const { data, error } = await supabase
+          .from('hm_profissional')
+          .select(`
+            prfl_id,
+            prfl_sobre,
+            prfl_verificado,
+            fr_usuario (usua_nome, usua_avatar_url),
+            hm_profissao (prfs_nome),
+            hm_cidade (cida_nome, hm_estado (esta_sigla)),
+            hm_avaliacao (aval_nota, aval_comentario, fr_usuario (usua_nome))
+          `);
 
-  const destaques = professionals.filter(p => p.rating >= 9.5).sort((a, b) => b.rating - a.rating).slice(0, 8);
+        if (error) throw error;
 
-  const profissionaisFiltrados = professionals
+        const formattedData = data.map(prof => {
+          const avaliacoes = prof.hm_avaliacao || [];
+          const mediaNota = avaliacoes.length > 0 
+            ? avaliacoes.reduce((acc, curr) => acc + Number(curr.aval_nota), 0) / avaliacoes.length 
+            : 0;
+
+          return {
+            id: prof.prfl_id,
+            name: prof.fr_usuario.usua_nome,
+            profession: prof.hm_profissao.prfs_nome,
+            rating: mediaNota,
+            distance: Math.floor(Math.random() * 15) + 1,
+            city: prof.hm_cidade ? prof.hm_cidade.cida_nome : 'Não informada',
+            uf: prof.hm_cidade ? prof.hm_cidade.hm_estado.esta_sigla : '',
+            avatar: prof.fr_usuario.usua_avatar_url,
+            verified: prof.prfl_verificado,
+            about: prof.prfl_sobre || 'Nenhuma descrição fornecida.',
+            reviews: avaliacoes.map(a => ({
+              user: a.fr_usuario.usua_nome,
+              text: a.aval_comentario,
+              nota: Number(a.aval_nota)
+            }))
+          };
+        });
+
+        setProfessionalsData(formattedData);
+      } catch (error) {
+        console.error("Erro ao buscar profissionais:", error.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchProfessionals();
+  }, []);
+
+  // Função para encerrar a sessão
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    navigate('/login');
+  };
+
+  const categoriasUnicas = [...new Set(professionalsData.map(p => p.profession))].sort();
+  const cidadesUnicas = [...new Set(professionalsData.map(p => p.city))].sort();
+
+  const destaques = professionalsData.filter(p => p.rating >= 9.5).sort((a, b) => b.rating - a.rating).slice(0, 8);
+
+  const profissionaisFiltrados = professionalsData
     .filter(p => (categoria ? p.profession === categoria : true))
     .filter(p => p.rating >= notaMinima)
     .filter(p => (cidade ? p.city === cidade : true))
@@ -40,26 +104,44 @@ export function Home() {
     setModalAberto(true);
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-950 flex flex-col items-center justify-center font-sans">
+        <Logo size="lg" variant="icon" className="animate-pulse mb-4" />
+        <Text className="text-orange-500 font-bold">Buscando profissionais...</Text>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 pb-6 relative font-sans w-full">
-      
       {/* 1. APP BAR */}
       <header className="w-full bg-gray-900 border-b border-gray-800 sticky top-0 z-50 pt-4 pb-4 shadow-lg shadow-black/50">
-        <div className="max-w-md mx-auto px-4 flex items-center gap-3">
-          <Logo size="sm" variant="icon" />
-          <div>
-            <Heading level={5} className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent">
-              Help-Me
-            </Heading>
-            <Text variant="xs" className="text-gray-200 font-medium">
-              Confiabilidade e Segurança
-            </Text>
+        <div className="max-w-md mx-auto px-4 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <Logo size="sm" variant="icon" />
+            <div>
+              <Heading level={5} className="bg-gradient-to-b from-orange-400 to-orange-600 bg-clip-text text-transparent">
+                Help-Me
+              </Heading>
+              <Text variant="xs" className="text-gray-200 font-medium">
+                Confiabilidade e Segurança
+              </Text>
+            </div>
           </div>
+          
+          {/* Botão de Sair adicionado aqui */}
+          <button 
+            onClick={handleLogout}
+            className="p-2 text-gray-400 hover:text-orange-500 transition-colors rounded-full hover:bg-gray-800"
+            title="Sair"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </header>
 
       <main className="max-w-md mx-auto relative z-10">
-        
         {/* 2. STORIES */}
         <div className="pt-5 pb-2">
           <div className="flex gap-4 overflow-x-auto px-4 snap-x hide-scrollbar">
@@ -80,7 +162,6 @@ export function Home() {
 
         {/* 3. BARRA DE FILTROS */}
         <div className="sticky top-[72px] z-40 bg-gray-950/95 backdrop-blur-xl pt-4 pb-4 px-4 border-b border-gray-800 shadow-xl shadow-black/40">
-          
           <div className="flex gap-2 mb-3">
             <div className="w-[55%]">
               <Text variant="xs" className="text-gray-400 font-bold uppercase tracking-wider mb-1.5 ml-1">O que precisa?</Text>
@@ -138,7 +219,6 @@ export function Home() {
 
           {profissionaisFiltrados.map((prof) => (
             <div key={prof.id} className="bg-gray-900 border border-gray-800 rounded-3xl overflow-hidden shadow-xl">
-              
               {prof.verified && (
                 <div className="bg-gradient-to-r from-orange-500/10 to-transparent border-b border-orange-500/10 px-4 py-2 flex items-center gap-2">
                   <ShieldCheck className="w-4 h-4 text-orange-500" />
@@ -149,7 +229,6 @@ export function Home() {
               <div className="p-5">
                 <div className="flex gap-4 items-start mb-4">
                   <img src={prof.avatar} alt={prof.name} className="w-14 h-14 rounded-full border border-gray-700 object-cover" />
-                  
                   <div className="flex-1">
                     <Heading level={5} className="leading-tight">{prof.name}</Heading>
                     <Text variant="sm" className="text-gray-400 font-medium">{prof.profession}</Text>
@@ -158,7 +237,6 @@ export function Home() {
                       {prof.city} ({prof.distance} km)
                     </div>
                   </div>
-
                   <div className={cn(
                     "flex flex-col items-center justify-center border rounded-xl p-2 min-w-[60px]",
                     prof.rating >= 9.5 ? "bg-yellow-500/10 border-yellow-500/30" : "bg-gray-800/80 border-gray-700"

@@ -1,6 +1,7 @@
 // src/pages/Login.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { supabase } from '../lib/supabase';
 import { Logo } from '../components/ui/Logo';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
@@ -9,11 +10,35 @@ import { Text } from '../components/ui/Typography';
 export function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [erro, setErro] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate('/home');
+    setLoading(true);
+    setErro('');
+
+    // Chamada real de autenticação do Supabase
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email: email,
+      password: password,
+    });
+
+    if (error) {
+      setErro('E-mail ou senha incorretos.');
+      setLoading(false);
+    } else {
+      // Lê o perfil escolhido de dentro dos metadados do usuário logado
+      const perfil = data.user?.user_metadata?.perfil_escolhido;
+
+      // Direciona para a tela correta com base no perfil
+      if (perfil === 'PROFISSIONAL') {
+        navigate('/dashboard');
+      } else {
+        navigate('/home');
+      }
+    }
   };
 
   return (
@@ -29,13 +54,13 @@ export function Login() {
             <div className="mb-4">
               <Logo size="lg" />
             </div>
-            <Text variant="sm" className="mt-2">Encontre profissionais perto de você</Text>
+            <Text variant="sm" className="mt-2 text-center">Entre para encontrar profissionais perto de você</Text>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                Email
+                E-mail
               </label>
               <Input
                 id="email"
@@ -44,6 +69,7 @@ export function Login() {
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 required
+                disabled={loading}
               />
             </div>
 
@@ -58,13 +84,33 @@ export function Login() {
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
                 required
+                disabled={loading}
               />
             </div>
 
-            <Button type="submit" variant="primary">
-              Entrar
+            {erro && (
+              <Text variant="sm" className="text-red-400 font-bold text-center bg-red-400/10 py-2 rounded-lg">
+                {erro}
+              </Text>
+            )}
+
+            <Button type="submit" variant="primary" disabled={loading}>
+              {loading ? 'Entrando...' : 'Entrar'}
             </Button>
           </form>
+
+          <div className="mt-6 text-center">
+            <Text variant="sm">
+              Não tem uma conta?{' '}
+              <button 
+                type="button" 
+                onClick={() => navigate('/register')} 
+                className="text-orange-500 font-bold hover:underline"
+              >
+                Cadastre-se
+              </button>
+            </Text>
+          </div>
         </div>
       </div>
     </div>
