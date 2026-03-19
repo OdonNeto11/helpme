@@ -157,7 +157,7 @@ export function DashboardProfissional() {
               <div>
                 <Text className="text-orange-500 font-bold text-lg mb-1">Localização não configurada!</Text>
                 <Text variant="sm" className="text-gray-300">
-                  Você não aparecerá nas buscas de clientes próximos enquanto não ativar seu GPS.
+                  Ative sua localização GPS para que mais clientes da sua região encontrem o seu perfil usando o filtro de distância.
                 </Text>
                 {erroLocal && <Text variant="xs" className="text-red-400 font-bold mt-2">{erroLocal}</Text>}
               </div>
