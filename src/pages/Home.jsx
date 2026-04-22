@@ -154,7 +154,16 @@ export function Home() {
 
   const handleWhatsApp = async (prof) => {
     if (!prof.whatsapp) return alert("WhatsApp não cadastrado.");
-    await supabase.rpc('registrar_clique_whatsapp', { p_prfl_id: prof.id });
+    
+    try {
+      const { error } = await supabase.rpc('registrar_clique_whatsapp', { p_prfl_id: prof.id });
+      if (error) {
+        console.error("Detalhes do erro Supabase:", error);
+      }
+    } catch (err) {
+      console.error("Erro no código: " + err.message);
+    }
+
     const msg = encodeURIComponent(`Olá ${prof.name}! Vi seu perfil no Help-Me para o serviço de ${prof.profession}.`);
     window.open(`https://wa.me/55${prof.whatsapp}?text=${msg}`, '_blank');
   };
@@ -162,7 +171,6 @@ export function Home() {
   const abrirDetalhes = async (prof) => {
     setProfSelecionado(prof);
     setModalAberto(true);
-    // Registra visualização
     try {
       await supabase.rpc('registrar_visualizacao', { p_prfl_id: prof.id });
     } catch (error) {
@@ -177,6 +185,7 @@ export function Home() {
     setBairro('');
     setRaioKm('10');
     setOrdenacao('nota');
+    setLocalizacao(null); // Reseta a localização também
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -191,7 +200,7 @@ export function Home() {
 
   return (
     <div className="min-h-screen bg-gray-950 pb-6 relative font-sans w-full">
-      {/* HEADER */}
+      {/* 1. HEADER (Fixo no topo) */}
       <header className="w-full bg-gray-900 border-b border-gray-800 sticky top-0 z-50 pt-4 pb-4 shadow-lg shadow-black/50">
         <div className="max-w-md mx-auto px-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3 cursor-pointer" onClick={resetarApp}>
@@ -215,16 +224,16 @@ export function Home() {
       </header>
 
       <main className="max-w-md mx-auto relative z-10">
-        {/* STORIES (DESTAQUES) */}
-        <div className="pt-5 pb-2">
+        {/* 2. STORIES (DESTAQUES) */}
+        <div className="pt-5 pb-4 border-b border-gray-900">
           <div className="flex gap-4 overflow-x-auto px-4 snap-x hide-scrollbar">
             {destaques.map((prof) => (
               <div key={`story-${prof.id}`} onClick={() => abrirDetalhes(prof)} className="flex flex-col items-center gap-1.5 min-w-[72px] cursor-pointer snap-start transition active:scale-95">
-                <div className="p-[2px] rounded-full bg-gradient-to-tr from-orange-500 via-orange-400 to-yellow-500">
-                  <img src={prof.avatar} className="w-16 h-16 rounded-full border-[3px] border-gray-900 object-cover" alt={prof.name} />
+                <div className="p-[2px] rounded-full bg-gradient-to-tr from-orange-500 via-orange-400 to-yellow-500 shadow-md">
+                  <img src={prof.avatar} className="w-16 h-16 rounded-full border-[3px] border-gray-950 object-cover" alt={prof.name} />
                 </div>
                 <Text variant="xs" className="truncate w-full text-center text-gray-300 font-bold">{prof.name.split(' ')[0]}</Text>
-                <div className="flex items-center text-[10px] bg-orange-500/10 text-orange-400 px-1.5 rounded-sm font-bold">
+                <div className="flex items-center text-[10px] bg-orange-500/10 text-orange-400 px-1.5 rounded-sm font-bold border border-orange-500/20">
                   <Star className="w-2.5 h-2.5 fill-current mr-0.5" />
                   {prof.rating.toFixed(1)}
                 </div>
@@ -233,17 +242,17 @@ export function Home() {
           </div>
         </div>
 
-        {/* BARRA DE FILTROS */}
-        <div className="sticky top-[72px] z-40 bg-gray-950/95 backdrop-blur-xl pt-4 pb-4 px-4 border-b border-gray-800 shadow-xl shadow-black/40">
+        {/* 3. BARRA DE FILTROS (Agora rola com a tela) */}
+        <div className="pt-4 pb-4 px-4 border-b border-gray-900 bg-gray-950">
+          
           <div className="flex gap-2 mb-3">
             <div className="w-[55%]">
               <Text variant="xs" className="text-gray-400 font-bold uppercase tracking-wider mb-1.5 ml-1">O que precisa?</Text>
-              <Select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="py-3.5 border-gray-700 bg-gray-900 text-gray-200">
+              <Select value={categoria} onChange={(e) => setCategoria(e.target.value)} className="py-3.5 border-gray-800 bg-gray-900 text-gray-200 focus:border-orange-500">
                 <option value="">Todas profissões</option>
                 {categorias.map(cat => <option key={cat.capr_id} value={cat.capr_id}>{cat.capr_nome}</option>)}
               </Select>
             </div>
-            
             <div className="w-[45%]">
               <Text variant="xs" className="text-yellow-500 font-bold uppercase tracking-wider mb-1.5 ml-1 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3" /> Exigir Nota
@@ -264,67 +273,64 @@ export function Home() {
             </div>
           </div>
 
-          <button onClick={() => setFiltrosSecundariosAbertos(!filtrosSecundariosAbertos)} className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-400 font-medium">
+          {/* GPS - AGORA FICA FIXO COMO FILTRO PRINCIPAL */}
+          <div className="bg-gradient-to-r from-orange-500/10 to-transparent p-4 rounded-xl border border-orange-500/30 shadow-inner mb-3">
+            <Text className="font-extrabold text-orange-500 text-xs mb-3 flex items-center gap-1.5 uppercase tracking-wider">
+              <Navigation size={14} /> Buscar perto de mim
+            </Text>
+            
+            {!localizacao ? (
+              <Button 
+                onClick={capturarLocalizacao} 
+                disabled={buscandoLocal} 
+                variant="secondary" 
+                className="w-full text-sm py-3 font-bold bg-gray-900 hover:bg-gray-800 border-gray-800 text-gray-300"
+              >
+                {buscandoLocal ? 'Localizando...' : '📍 Ativar GPS para filtrar distância'}
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Select value={raioKm} onChange={(e) => setRaioKm(e.target.value)} className="bg-gray-900 flex-1 text-gray-200 border-orange-500/30">
+                  <option value="5">Até 5km</option>
+                  <option value="10">Até 10km</option>
+                  <option value="50">Até 50km</option>
+                </Select>
+                <div className="flex items-center gap-1 text-green-500 text-[10px] font-bold bg-green-500/10 px-3 rounded-lg border border-green-500/20">
+                  <CheckCircle size={14} className="fill-current"/> ATIVO
+                </div>
+              </div>
+            )}
+          </div>
+
+          <button onClick={() => setFiltrosSecundariosAbertos(!filtrosSecundariosAbertos)} className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-400 font-medium hover:text-gray-200 transition-colors">
             <SlidersHorizontal className="w-4 h-4" />
-            Mais filtros
+            Mais filtros (Cidade e Ordem)
             {filtrosSecundariosAbertos ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
           </button>
-{filtrosSecundariosAbertos && (
-            <div className="space-y-3 mt-3 animate-in slide-in-from-top-2 fade-in">
-              
-              {/* 1. BUSCAR PERTO DE MIM (Movido para o topo e com destaque) */}
-              <div className="bg-gradient-to-r from-orange-500/10 to-transparent p-4 rounded-xl border border-orange-500/30 shadow-inner">
-                <Text className="font-extrabold text-orange-500 text-xs mb-3 flex items-center gap-1.5 uppercase tracking-wider">
-                  <Navigation size={14} /> Buscar perto de mim
-                </Text>
-                
-                {!localizacao ? (
-                  <Button 
-                    onClick={capturarLocalizacao} 
-                    disabled={buscandoLocal} 
-                    variant="secondary" 
-                    className="w-full text-sm py-3 font-bold bg-gray-900 hover:bg-gray-800 border-gray-700 text-gray-100"
-                  >
-                    {buscandoLocal ? 'Localizando...' : '📍 Ativar GPS para filtrar distância'}
-                  </Button>
-                ) : (
-                  <div className="flex gap-2">
-                    <Select value={raioKm} onChange={(e) => setRaioKm(e.target.value)} className="bg-gray-900 flex-1 text-gray-200 border-orange-500/30">
-                      <option value="5">Até 5km</option>
-                      <option value="10">Até 10km</option>
-                      <option value="50">Até 50km</option>
-                    </Select>
-                    <div className="flex items-center gap-1 text-green-500 text-[10px] font-bold bg-green-500/10 px-3 rounded-lg border border-green-500/20">
-                      <CheckCircle size={14} className="fill-current"/> ATIVO
-                    </div>
-                  </div>
-                )}
-              </div>
 
-              {/* 2. FILTROS DE CIDADE E BAIRRO */}
+          {filtrosSecundariosAbertos && (
+            <div className="space-y-3 mt-3 animate-in slide-in-from-top-2 fade-in">
               <div className="flex gap-2">
-                <Select value={cidade} onChange={(e) => { setCidade(e.target.value); setBairro(''); }} className="w-1/2 bg-gray-900 text-gray-200">
+                <Select value={cidade} onChange={(e) => { setCidade(e.target.value); setBairro(''); }} className="w-1/2 bg-gray-900 text-gray-200 border-gray-800">
                   <option value="">Qualquer cidade</option>
                   {cidadesUnicas.map(cid => <option key={cid} value={cid}>{cid}</option>)}
                 </Select>
-                <Select value={bairro} onChange={(e) => setBairro(e.target.value)} className="w-1/2 bg-gray-900 text-gray-200" disabled={!cidade}>
+                <Select value={bairro} onChange={(e) => setBairro(e.target.value)} className="w-1/2 bg-gray-900 text-gray-200 border-gray-800" disabled={!cidade}>
                   <option value="">Qualquer bairro</option>
                   {bairrosUnicos.map(b => <option key={b} value={b}>{b}</option>)}
                 </Select>
               </div>
 
-              {/* 3. ORDENAÇÃO */}
-              <Select value={ordenacao} onChange={(e) => setOrdenacao(e.target.value)} className="w-full bg-gray-900 text-gray-200">
+              <Select value={ordenacao} onChange={(e) => setOrdenacao(e.target.value)} className="w-full bg-gray-900 text-gray-200 border-gray-800">
                 <option value="nota">Ordenar por: Maior Nota</option>
                 <option value="distancia">Ordenar por: Mais Perto</option>
               </Select>
-              
             </div>
           )}
         </div>
 
-        {/* FEED DE RESULTADOS */}
-        <div className="px-4 mt-6 space-y-5">
+        {/* 4. FEED DE RESULTADOS */}
+        <div className="px-4 mt-6 space-y-6">
           <Text variant="xs" className="text-gray-500 font-medium ml-1">
             Exibindo {profissionaisFiltrados.length} profissionais disponíveis
           </Text>
@@ -340,10 +346,15 @@ export function Home() {
               
               <div className="p-5">
                 <div className="flex gap-4 items-start mb-4">
-                  <img src={prof.avatar} alt={prof.name} className="w-14 h-14 rounded-full border border-gray-700 object-cover" />
+                  <img src={prof.avatar} alt={prof.name} className="w-14 h-14 rounded-full border border-gray-800 object-cover" />
                   <div className="flex-1">
-                    <Heading level={5} className="leading-tight">{prof.name}</Heading>
-                    <Text variant="sm" className="text-gray-400 font-medium">{prof.profession}</Text>
+                    <Heading level={5} className="leading-tight mb-1">{prof.name}</Heading>
+                    
+                    {/* NOVO DESTAQUE DA PROFISSÃO (Badge Style) */}
+                    <div className="inline-flex items-center bg-orange-500/15 border border-orange-500/20 text-orange-400 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest mb-1.5">
+                      {prof.profession}
+                    </div>
+
                     <div className="flex items-center gap-1.5 text-gray-500 text-xs mt-1">
                       <MapPin className="w-3.5 h-3.5" />
                       {prof.bairro ? `${prof.bairro}, ${prof.city}` : prof.city} {prof.distance !== null && `(${prof.distance} km)`}
@@ -362,7 +373,7 @@ export function Home() {
 
                 <Text variant="sm" className="text-gray-400 line-clamp-2 mb-5">"{prof.about}"</Text>
 
-                <Button variant="secondary" onClick={() => abrirDetalhes(prof)} className="w-full text-sm py-3">
+                <Button variant="secondary" onClick={() => abrirDetalhes(prof)} className="w-full text-sm py-3 font-medium bg-gray-800 hover:bg-gray-700 text-white">
                   Ver perfil completo
                 </Button>
               </div>
