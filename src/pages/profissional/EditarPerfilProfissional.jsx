@@ -1,15 +1,15 @@
-// src/pages/EditarPerfil.jsx
+// src/pages/profissional/EditarPerfil.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Save, User, MapPin, Briefcase, Navigation, CheckCircle } from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { Logo } from '../components/ui/Logo';
-import { Heading, Text } from '../components/ui/Typography';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
-import { Select } from '../components/ui/Select';
+import { supabase } from '../../lib/supabase';
+import { Logo } from '../../components/ui/Logo';
+import { Heading, Text } from '../../components/ui/Typography';
+import { Input } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
+import { Select } from '../../components/ui/Select';
 
-export function EditarPerfil() {
+export function EditarPerfilProfissional() {
   const navigate = useNavigate();
 
   // Estados de Domínio (Listas)

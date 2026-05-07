@@ -1,12 +1,12 @@
 // src/pages/Register.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { Logo } from '../components/ui/Logo';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
-import { Text, Heading } from '../components/ui/Typography';
-import { Select } from '../components/ui/Select';
+import { supabase } from '../../lib/supabase';
+import { Logo } from '../../components/ui/Logo';
+import { Input } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
+import { Text, Heading } from '../../components/ui/Typography';
+import { Select } from '../../components/ui/Select';
 
 export function Register() {
   const [nome, setNome] = useState('');

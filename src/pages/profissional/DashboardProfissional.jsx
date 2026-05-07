@@ -5,10 +5,10 @@ import {
   Users, Eye, Star, MessageSquare, TrendingUp, 
   Bell, LogOut, MapPin, Settings, CheckCircle 
 } from 'lucide-react';
-import { Logo } from '../components/ui/Logo';
-import { Heading, Text } from '../components/ui/Typography';
-import { Button } from '../components/ui/Button';
-import { supabase } from '../lib/supabase';
+import { Logo } from '../../components/ui/Logo';
+import { Heading, Text } from '../../components/ui/Typography';
+import { Button } from '../../components/ui/Button';
+import { supabase } from '../../lib/supabase';
 
 export function DashboardProfissional() {
   const navigate = useNavigate();

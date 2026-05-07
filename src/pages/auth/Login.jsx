@@ -1,11 +1,11 @@
 // src/pages/Login.jsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabase';
-import { Logo } from '../components/ui/Logo';
-import { Input } from '../components/ui/Input';
-import { Button } from '../components/ui/Button';
-import { Text } from '../components/ui/Typography';
+import { supabase } from '../../lib/supabase';
+import { Logo } from '../../components/ui/Logo';
+import { Input } from '../../components/ui/Input';
+import { Button } from '../../components/ui/Button';
+import { Text } from '../../components/ui/Typography';
 
 export function Login() {
   const [email, setEmail] = useState('');
