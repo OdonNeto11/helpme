@@ -202,12 +202,12 @@ export function Home() {
   // OLHA COMO FICOU LIMPO:
   return (
     <div className="min-h-screen bg-gray-950 pb-6 relative font-sans w-full">
-      <CabecalhoHome 
-        avatarUsuario={userAvatar} 
-        onResetar={resetarApp} 
-        onNavegarPerfil={() => navigate('/perfil-cliente')} 
-        onSair={handleSair} 
-      />
+<CabecalhoHome 
+  avatarUsuario={userAvatar} 
+  onResetar={resetarApp} 
+  onNavegarPerfil={() => navigate('/perfil-cliente')} 
+  onSair={handleSair} 
+/>
 
       <main className="max-w-md mx-auto relative z-10">
         <CarrosselDestaques 

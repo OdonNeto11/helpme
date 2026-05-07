@@ -19,7 +19,13 @@ export function CardProfissional({ prof, onAbrirDetalhes }) {
       
       <div className="p-5">
         <div className="flex gap-4 items-start mb-4">
-          <img src={prof.avatar} alt={prof.name} className="w-14 h-14 rounded-full border border-gray-800 object-cover" />
+<img 
+  src={prof.avatar} 
+  alt={prof.name} 
+  loading="lazy" 
+  decoding="async"
+  className="w-14 h-14 rounded-full border border-gray-800 object-cover" 
+/>
           <div className="flex-1">
             <Heading level={5} className="leading-tight mb-1">{prof.name}</Heading>
             <div className="inline-flex items-center bg-orange-500/15 border border-orange-500/20 text-orange-400 px-2.5 py-1 rounded-md text-[10px] font-extrabold uppercase tracking-widest mb-1.5">
